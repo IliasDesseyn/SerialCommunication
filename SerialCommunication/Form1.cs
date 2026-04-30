@@ -8,8 +8,10 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 using System.Windows.Forms;
 using System.Windows.Forms.VisualStyles;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Button;
 
 namespace SerialCommunication
 {
@@ -60,13 +62,17 @@ namespace SerialCommunication
                 if (serialPortArduino.IsOpen)
                 {
                     // ik heb een verbinding --> de gebruiker wil deze verbreken
+                    serialPortArduino.Close();
+                    radioButtonVerbonden.Checked = false;
+                    buttonConnect.Text = "Connect";
+;                   labelStatus.Text = "Status: Disconnected";
                 }
                 else
                 {
                     // ik heb geen verbinding --> de gebruiker wil een verbinding maken
-                    serialPortArduino.PortName = (string) comboBoxPoort.SelectedItem;
-                    serialPortArduino.BaudRate = Int32.Parse((string) comboBoxBaudrate.SelectedItem);
-                    serialPortArduino.DataBits = (int) numericUpDownDatabits.Value;
+                    serialPortArduino.PortName = (string)comboBoxPoort.SelectedItem;
+                    serialPortArduino.BaudRate = Int32.Parse((string)comboBoxBaudrate.SelectedItem);
+                    serialPortArduino.DataBits = (int)numericUpDownDatabits.Value;
 
                     if (radioButtonParityEven.Checked) serialPortArduino.Parity = Parity.Even;
                     else if (radioButtonParityOdd.Checked) serialPortArduino.Parity = Parity.Odd;
@@ -76,11 +82,40 @@ namespace SerialCommunication
 
                     if (radioButtonStopbitsNone.Checked) serialPortArduino.StopBits = StopBits.None;
                     else if (radioButtonStopbitsOne.Checked) serialPortArduino.StopBits = StopBits.One;
+                    else if (radioButtonStopbitsOnePointFive.Checked) serialPortArduino.StopBits = StopBits.OnePointFive;
+                    else if (radioButtonStopbitsTwo.Checked) serialPortArduino.StopBits = StopBits.Two;
+
+                    if (radioButtonHandshakeNone.Checked) serialPortArduino.Handshake = Handshake.None;
+                    else if (radioButtonHandshakeRTS.Checked) serialPortArduino.Handshake = Handshake.RequestToSend;
+                    else if (radioButtonHandshakeRTSXonXoff.Checked) serialPortArduino.Handshake = Handshake.RequestToSendXOnXOff;
+                    else if (radioButtonHandshakeXonXoff.Checked) serialPortArduino.Handshake = Handshake.XOnXOff;
+
+                    serialPortArduino.Open();
+                    string commando = "ping";
+                    serialPortArduino.WriteLine(commando);
+                    string antwoord = serialPortArduino.ReadLine();
+                    antwoord = antwoord.TrimEnd();
+                    if (antwoord == "pong")
+                    {
+                        radioButtonVerbonden.Checked = true;
+                        buttonConnect.Text = "Discconnect";
+                        labelStatus.Text = "Status: Connected";
+                    }
+                    else
+                    {
+                        serialPortArduino.Close();
+                        labelStatus.Text = "Error: verkeerd antwoord";
+                    }
                 }
             }
             catch (Exception exception)
             {
                 labelStatus.Text = "Error: " + exception.Message;
+                serialPortArduino.Close();
+                radioButtonVerbonden.Checked = false;
+                buttonConnect.Text = "Connect";
+
+
             }
         }
     }
