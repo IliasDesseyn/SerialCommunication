@@ -236,6 +236,7 @@ namespace SerialCommunication
         {
             timerOefening3.Enabled = tabControl.SelectedIndex == 3;
             timerOefening4.Enabled = tabControl.SelectedIndex == 4;
+            timerOefening5.Enabled = tabControl.SelectedIndex == 5;
         }
 
         private void timerOefening3_Tick(object sender, EventArgs e)
@@ -296,6 +297,63 @@ namespace SerialCommunication
                 }
 
 
+            }
+            catch (Exception exception)
+            {
+                labelStatus.Text = "Error: " + exception.Message;
+                serialPortArduino.Close();
+                radioButtonVerbonden.Checked = false;
+                buttonConnect.Text = "Connect";
+            }
+        }
+
+        private void timerOefening5_Tick(object sender, EventArgs e)
+        {
+            try
+            {
+                if (serialPortArduino.IsOpen)
+                {
+                    // Gewenste temperatuur - analoge pin 0
+                    serialPortArduino.ReadExisting();
+                    string commando = "get a0";
+                    serialPortArduino.WriteLine(commando);
+                    string antwoord = serialPortArduino.ReadLine();
+                    antwoord = antwoord.TrimEnd();
+                    antwoord = antwoord.Substring(4);
+                    int rawA0 = Int32.Parse(antwoord);
+
+                    // Herschaal 0..1023 → 5..45 °C
+                    // rc = (45 - 5) / (1023 - 0) = 40 / 1023
+                    // offset = 5
+                    double rc1 = 40.0 / 1023.0;
+                    double offset1 = 5.0;
+                    double gewensteTemp = rc1 * rawA0 + offset1;
+                    labelGewensteTemp.Text = gewensteTemp.ToString("F1") + " °C";
+
+                    // Huidige temperatuur - analoge pin 1
+                    serialPortArduino.ReadExisting();
+                    commando = "get a1";
+                    serialPortArduino.WriteLine(commando);
+                    antwoord = serialPortArduino.ReadLine();
+                    antwoord = antwoord.TrimEnd();
+                    antwoord = antwoord.Substring(4);
+                    int rawA1 = Int32.Parse(antwoord);
+
+                    // Herschaal 0..1023 → 0..500 °C
+                    // rc = (500 - 0) / (1023 - 0) = 500 / 1023
+                    // offset = 0
+                    double rc2 = 500.0 / 1023.0;
+                    double offset2 = 0.0;
+                    double huidigeTemp = rc2 * rawA1 + offset2;
+                    labelHuidigeTemp.Text = huidigeTemp.ToString("F1") + " °C";
+
+                    // Led aansturen via digitale pin 2
+                    // Led AAN wanneer huidige temperatuur LAGER is dan gewenste temperatuur
+                    if (huidigeTemp < gewensteTemp)
+                        serialPortArduino.WriteLine("set d2 high");
+                    else
+                        serialPortArduino.WriteLine("set d2 low");
+                }
             }
             catch (Exception exception)
             {
