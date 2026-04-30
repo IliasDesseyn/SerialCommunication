@@ -313,45 +313,45 @@ namespace SerialCommunication
             {
                 if (serialPortArduino.IsOpen)
                 {
-                    // Gewenste temperatuur - analoge pin 0
-                    serialPortArduino.ReadExisting();
-                    string commando = "get a0";
-                    serialPortArduino.WriteLine(commando);
-                    string antwoord = serialPortArduino.ReadLine();
-                    antwoord = antwoord.TrimEnd();
-                    antwoord = antwoord.Substring(4);
-                    int rawA0 = Int32.Parse(antwoord);
+                   // ── Gewenste temperatuur – analoge pin 0 (potentiometer) ──
+                   serialPortArduino.ReadExisting();
+                   serialPortArduino.WriteLine("get a0");
+                   string antwoord = serialPortArduino.ReadLine();
+                   antwoord = antwoord.TrimEnd().Substring(4);
+                   int rawA0 = Int32.Parse(antwoord);
 
-                    // Herschaal 0..1023 → 5..45 °C
-                    // rc = (45 - 5) / (1023 - 0) = 40 / 1023
-                    // offset = 5
-                    double rc1 = 40.0 / 1023.0;
-                    double offset1 = 5.0;
-                    double gewensteTemp = rc1 * rawA0 + offset1;
-                    labelGewensteTemp.Text = gewensteTemp.ToString("F1") + " °C";
+                   // Herschaal 0..1023 → 5..45 °C
+                   // rc     = (45 - 5) / (1023 - 0) = 40 / 1023
+                   // offset = 5
+                   double rc1 = 40.0 / 1023.0;
+                   double offset1 = 5.0;
+                   double gewensteTemp = rc1 * rawA0 + offset1;
+                   labelGewensteTemp.Text = gewensteTemp.ToString("F1") + " °C";
 
-                    // Huidige temperatuur - analoge pin 1
-                    serialPortArduino.ReadExisting();
-                    commando = "get a1";
-                    serialPortArduino.WriteLine(commando);
-                    antwoord = serialPortArduino.ReadLine();
-                    antwoord = antwoord.TrimEnd();
-                    antwoord = antwoord.Substring(4);
-                    int rawA1 = Int32.Parse(antwoord);
+                   // ── Huidige temperatuur – analoge pin 1 (LM35) ──
+                   serialPortArduino.ReadExisting();
+                   serialPortArduino.WriteLine("get a1");
+                   antwoord = serialPortArduino.ReadLine();
+                   antwoord = antwoord.TrimEnd().Substring(4);
+                   int rawA1 = Int32.Parse(antwoord);
 
-                    // Herschaal 0..1023 → 0..500 °C
-                    // rc = (500 - 0) / (1023 - 0) = 500 / 1023
-                    // offset = 0
-                    double rc2 = 500.0 / 1023.0;
-                    double offset2 = 0.0;
-                    double huidigeTemp = rc2 * rawA1 + offset2;
-                    labelHuidigeTemp.Text = huidigeTemp.ToString("F1") + " °C";
+                   // LM35: 10 mV per °C, referentiespanning 5 V
+                   // Stap 1 – Spanning:    V = rawA1 × (5.0 / 1023.0)
+                   // Stap 2 – Temperatuur: T = V × 100
+                   // Samengevoegd:         T = rawA1 × (500.0 / 1023.0)
+                   // rc     = 500.0 / 1023.0
+                   // offset = 0
+                   double rc2 = 500.0 / 1023.0;
+                   double offset2 = 0.0;
+                   double huidigeTemp = rc2 * rawA1 + offset2;
+                   labelHuidigeTemp.Text = huidigeTemp.ToString("F1") + " °C";
 
-                    // Led aansturen via digitale pin 2
-                    // Led AAN wanneer huidige temperatuur LAGER is dan gewenste temperatuur
-                    if (huidigeTemp < gewensteTemp)
-                        serialPortArduino.WriteLine("set d2 high");
-                    else
+                   // ── Led aansturen – digitale pin 2 ──
+                   // Led AAN → huidige temperatuur LAGER dan gewenste temperatuur (te koud)
+                   // Led UIT → huidige temperatuur GELIJK AAN of HOGER dan gewenste temperatuur
+                   if (huidigeTemp < gewensteTemp)
+                       serialPortArduino.WriteLine("set d2 high");
+                   else
                         serialPortArduino.WriteLine("set d2 low");
                 }
             }
