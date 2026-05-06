@@ -8,6 +8,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Security;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using System.Windows.Forms;
@@ -18,6 +19,16 @@ namespace SerialCommunication
 {
     public partial class Form1 : Form
     {
+        enum Toestand
+        {
+            OK,
+            ALARM,
+            BEVESTIGD
+        }
+
+        Toestand huidigeToestand = Toestand.OK;
+        bool vorigeKnopStatus = false;
+
         public Form1()
         {
             InitializeComponent();
@@ -66,7 +77,7 @@ namespace SerialCommunication
                     serialPortArduino.Close();
                     radioButtonVerbonden.Checked = false;
                     buttonConnect.Text = "Connect";
-;                   labelStatus.Text = "Status: Disconnected";
+                    ; labelStatus.Text = "Status: Disconnected";
                 }
                 else
                 {
@@ -90,6 +101,10 @@ namespace SerialCommunication
                     else if (radioButtonHandshakeRTS.Checked) serialPortArduino.Handshake = Handshake.RequestToSend;
                     else if (radioButtonHandshakeRTSXonXoff.Checked) serialPortArduino.Handshake = Handshake.RequestToSendXOnXOff;
                     else if (radioButtonHandshakeXonXoff.Checked) serialPortArduino.Handshake = Handshake.XOnXOff;
+
+                    serialPortArduino.RtsEnable = checkBoxRtsEnable.Checked;
+                    serialPortArduino.DtrEnable = checkBoxDtrEnable.Checked;
+
 
                     serialPortArduino.Open();
                     string commando = "ping";
@@ -119,6 +134,8 @@ namespace SerialCommunication
 
             }
         }
+
+
 
         private void checkBoxDigital2_CheckedChanged(object sender, EventArgs e)
         {
@@ -237,6 +254,7 @@ namespace SerialCommunication
             timerOefening3.Enabled = tabControl.SelectedIndex == 3;
             timerOefening4.Enabled = tabControl.SelectedIndex == 4;
             timerOefening5.Enabled = tabControl.SelectedIndex == 5;
+            timerOefening6.Enabled = tabControl.SelectedIndex == 6;
         }
 
         private void timerOefening3_Tick(object sender, EventArgs e)
@@ -353,6 +371,14 @@ namespace SerialCommunication
                        serialPortArduino.WriteLine("set d2 high");
                    else
                         serialPortArduino.WriteLine("set d2 low");
+
+                }
+                else
+                {
+                    labelStatus.Text = "Verbinding verbroken.";
+                    radioButtonVerbonden.Checked = false;
+                    buttonConnect.Text = "Connect";
+                    serialPortArduino.Close();
                 }
             }
             catch (Exception exception)
@@ -360,6 +386,178 @@ namespace SerialCommunication
                 labelStatus.Text = "Error: " + exception.Message;
                 serialPortArduino.Close();
                 radioButtonVerbonden.Checked = false;
+                buttonConnect.Text = "Connect";
+            }
+        }
+
+        private void timerOefening6_Tick(object sender, EventArgs e)
+        {
+            try
+            {
+                if (serialPortArduino.IsOpen)
+                {
+                    // ─────────────────────────────────────────────
+                    // Stap 4.1 – Alarm temperatuur instellen
+                    // Potmeter op A0
+                    // Herschaal 0..1023 → -10°C .. +60°C
+                    // ─────────────────────────────────────────────
+
+                    serialPortArduino.ReadExisting();
+
+                    serialPortArduino.WriteLine("get a0");
+                    string antwoord = serialPortArduino.ReadLine();
+
+                    antwoord = antwoord.TrimEnd().Substring(4);
+
+                    int rawA0 = Int32.Parse(antwoord);
+
+                    double rc1 = 70.0 / 1023.0;
+                    double offset1 = -10.0;
+
+                    double alarmTemp = rc1 * rawA0 + offset1;
+
+                    labelAlarmTemp.Text = alarmTemp.ToString("F1") + " °C";
+
+
+                    // ─────────────────────────────────────────────
+                    // Stap 4.2 – Temperatuur sensor uitlezen
+                    // LM35 op A1
+                    // ─────────────────────────────────────────────
+
+                    serialPortArduino.ReadExisting();
+
+                    serialPortArduino.WriteLine("get a1");
+                    antwoord = serialPortArduino.ReadLine();
+
+                    antwoord = antwoord.TrimEnd().Substring(4);
+
+                    int rawA1 = Int32.Parse(antwoord);
+
+                    double rc2 = 500.0 / 1023.0;
+                    double offset2 = 0.0;
+
+                    double huidigeTemp = rc2 * rawA1 + offset2;
+
+                    labelHuidigeTemp.Text = huidigeTemp.ToString("F1") + " °C";
+
+
+                    // ─────────────────────────────────────────────
+                    // Stap 4.3 – Drukknop uitlezen
+                    // knop op digitale pin 5
+                    // ─────────────────────────────────────────────
+
+                    serialPortArduino.ReadExisting();
+
+                    serialPortArduino.WriteLine("get d5");
+                    antwoord = serialPortArduino.ReadLine();
+
+                    antwoord = antwoord.TrimEnd().Substring(4);
+
+                    bool knopIngedrukt = (antwoord == "1");
+
+
+                    // detectie van opgaande flank
+                    bool knopGedrukt =
+                        knopIngedrukt && !vorigeKnopStatus;
+
+                    vorigeKnopStatus = knopIngedrukt;
+
+
+                    // ─────────────────────────────────────────────
+                    // Stap 4.4 – Toestandsmachine
+                    // ─────────────────────────────────────────────
+
+                    switch (huidigeToestand)
+                    {
+                        case Toestand.OK:
+
+                            // temperatuur te hoog → alarm
+                            if (huidigeTemp > alarmTemp)
+                            {
+                                huidigeToestand = Toestand.ALARM;
+                            }
+
+                            break;
+
+
+                        case Toestand.ALARM:
+
+                            // gebruiker bevestigt alarm
+                            if (knopGedrukt)
+                            {
+                                // temperatuur nog te hoog?
+                                if (huidigeTemp > alarmTemp)
+                                {
+                                    huidigeToestand = Toestand.BEVESTIGD;
+                                }
+                                else
+                                {
+                                    huidigeToestand = Toestand.OK;
+                                }
+                            }
+
+                            break;
+
+
+                        case Toestand.BEVESTIGD:
+
+                            // temperatuur terug normaal
+                            if (huidigeTemp <= alarmTemp)
+                            {
+                                huidigeToestand = Toestand.OK;
+                            }
+
+                            break;
+                    }
+
+
+                    // ─────────────────────────────────────────────
+                    // Stap 4.5 – Uitgangen aansturen
+                    // LED = d2
+                    // Buzzer = d3
+                    // ─────────────────────────────────────────────
+
+                    switch (huidigeToestand)
+                    {
+                        case Toestand.OK:
+
+                            serialPortArduino.WriteLine("set d2 low");
+                            serialPortArduino.WriteLine("set d3 low");
+
+                            labelToestand.Text = "OK";
+
+                            break;
+
+
+                        case Toestand.ALARM:
+
+                            serialPortArduino.WriteLine("set d2 high");
+                            serialPortArduino.WriteLine("set d3 high");
+
+                            labelToestand.Text = "ALARM";
+
+                            break;
+
+
+                        case Toestand.BEVESTIGD:
+
+                            serialPortArduino.WriteLine("set d2 high");
+                            serialPortArduino.WriteLine("set d3 low");
+
+                            labelToestand.Text = "BEVESTIGD";
+
+                            break;
+                    }
+                }
+            }
+            catch (Exception exception)
+            {
+                labelStatus.Text = "Error: " + exception.Message;
+
+                serialPortArduino.Close();
+
+                radioButtonVerbonden.Checked = false;
+
                 buttonConnect.Text = "Connect";
             }
         }

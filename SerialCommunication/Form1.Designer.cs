@@ -93,6 +93,8 @@
             this.timerOefening3 = new System.Windows.Forms.Timer(this.components);
             this.timerOefening4 = new System.Windows.Forms.Timer(this.components);
             this.timerOefening5 = new System.Windows.Forms.Timer(this.components);
+            this.timerOefening6 = new System.Windows.Forms.Timer(this.components);
+            this.tabPageOefening6 = new System.Windows.Forms.TabPage();
             this.tabControl.SuspendLayout();
             this.tabPageInstellingen.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -172,11 +174,12 @@
             this.tabControl.Controls.Add(this.tabPageOefening3);
             this.tabControl.Controls.Add(this.tabPageOefening4);
             this.tabControl.Controls.Add(this.tabPageOefening5);
+            this.tabControl.Controls.Add(this.tabPageOefening6);
             this.tabControl.Location = new System.Drawing.Point(16, 65);
             this.tabControl.Margin = new System.Windows.Forms.Padding(4);
             this.tabControl.Name = "tabControl";
             this.tabControl.SelectedIndex = 0;
-            this.tabControl.Size = new System.Drawing.Size(1045, 513);
+            this.tabControl.Size = new System.Drawing.Size(1045, 475);
             this.tabControl.TabIndex = 9;
             this.tabControl.SelectedIndexChanged += new System.EventHandler(this.tabControl_SelectedIndexChanged);
             // 
@@ -198,7 +201,7 @@
             this.tabPageInstellingen.Margin = new System.Windows.Forms.Padding(4);
             this.tabPageInstellingen.Name = "tabPageInstellingen";
             this.tabPageInstellingen.Padding = new System.Windows.Forms.Padding(4);
-            this.tabPageInstellingen.Size = new System.Drawing.Size(1037, 484);
+            this.tabPageInstellingen.Size = new System.Drawing.Size(1037, 446);
             this.tabPageInstellingen.TabIndex = 2;
             this.tabPageInstellingen.Text = "Instellingen";
             this.tabPageInstellingen.UseVisualStyleBackColor = true;
@@ -860,7 +863,7 @@
             this.statusStrip.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.statusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.labelStatus});
-            this.statusStrip.Location = new System.Drawing.Point(0, 587);
+            this.statusStrip.Location = new System.Drawing.Point(0, 549);
             this.statusStrip.Name = "statusStrip";
             this.statusStrip.Padding = new System.Windows.Forms.Padding(1, 0, 19, 0);
             this.statusStrip.Size = new System.Drawing.Size(1077, 22);
@@ -871,6 +874,11 @@
             // 
             this.labelStatus.Name = "labelStatus";
             this.labelStatus.Size = new System.Drawing.Size(0, 16);
+            // 
+            // serialPortArduino
+            // 
+            this.serialPortArduino.ReadTimeout = 1000;
+            this.serialPortArduino.WriteTimeout = 1000;
             // 
             // timerOefening3
             // 
@@ -887,11 +895,25 @@
             this.timerOefening5.Interval = 1000;
             this.timerOefening5.Tick += new System.EventHandler(this.timerOefening5_Tick);
             // 
+            // timerOefening6
+            // 
+            this.timerOefening6.Tick += new System.EventHandler(this.timerOefening6_Tick);
+            // 
+            // tabPageOefening6
+            // 
+            this.tabPageOefening6.Location = new System.Drawing.Point(4, 25);
+            this.tabPageOefening6.Name = "tabPageOefening6";
+            this.tabPageOefening6.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPageOefening6.Size = new System.Drawing.Size(1037, 446);
+            this.tabPageOefening6.TabIndex = 6;
+            this.tabPageOefening6.Text = "Oefening 6";
+            this.tabPageOefening6.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1077, 609);
+            this.ClientSize = new System.Drawing.Size(1077, 571);
             this.Controls.Add(this.statusStrip);
             this.Controls.Add(this.tabControl);
             this.Controls.Add(this.radioButtonVerbonden);
@@ -1002,6 +1024,8 @@
         private System.Windows.Forms.Timer timerOefening3;
         private System.Windows.Forms.Timer timerOefening4;
         private System.Windows.Forms.Timer timerOefening5;
+        private System.Windows.Forms.Timer timerOefening6;
+        private System.Windows.Forms.TabPage tabPageOefening6;
     }
 }
 
